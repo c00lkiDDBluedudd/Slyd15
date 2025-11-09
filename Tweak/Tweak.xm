@@ -251,4 +251,13 @@ static void reloadPreferences() {
     CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
 
     %init(SlideToUnlock);
+}UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSlide:)];
+[self.view addGestureRecognizer:pan];
+
+- (void)handleSlide:(UIPanGestureRecognizer *)gesture {
+    CGPoint translation = [gesture translationInView:self.view];
+    if (translation.x > 200) {
+        [[%c(SBLockScreenManager) sharedInstance] unlockUIFromSource:0];
+    }
 }
+
