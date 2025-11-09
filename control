@@ -1,10 +1,5 @@
-Package: com.koolstudios.slyd15
-Name: Slyd15
-Version: 1.0
+Package: com.yourname.slydplus
+Name: Slyd+
+Version: 1.0.0
 Architecture: iphoneos-arm64
-Description: Slide to Unlock for iOS 15
-Maintainer: Your Name
-Author: Nepeta (ported by koolstudios)
-Section: Tweaks
-Depends: firmware (>= 15.0), ws.hbang.common
-Rootless: true
+Description: Custom Slide to Unlock tweak based on Slyd
