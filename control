@@ -1,9 +1,10 @@
-Package: me.nepeta.slyd
-Name: Slyd (SlideToUnlock)
-Depends: mobilesubstrate, ws.hbang.common (>= 1.11), firmware (>= 11.0)
-Version: 0.1.1
-Architecture: iphoneos-arm
-Description: Slide to unlock for iOS 11 and 12.
-Maintainer: Nepeta
-Author: Nepeta
+Package: com.koolstudios.slyd15
+Name: Slyd15
+Version: 1.0
+Architecture: iphoneos-arm64
+Description: Slide to Unlock for iOS 15
+Maintainer: Your Name
+Author: Nepeta (ported by koolstudios)
 Section: Tweaks
+Depends: firmware (>= 15.0), ws.hbang.common
+Rootless: true
