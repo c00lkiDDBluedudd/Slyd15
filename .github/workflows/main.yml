@@ -16,13 +16,18 @@ jobs:
 
     - name: Install dependencies
       run: |
-        brew install ldid
-        brew install dpkg
+        brew install ldid dpkg
         git clone --recursive https://github.com/theos/theos.git $HOME/theos
-        echo 'export THEOS=$HOME/theos' >> $GITHUB_ENV
+        echo "export THEOS=$HOME/theos" >> $GITHUB_ENV
 
     - name: Build tweak
       run: |
         export THEOS=$HOME/theos
         make clean
         make rootless package
+
+    - name: Upload .deb artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: slyd15-package
+        path: packages/*.deb
