@@ -31,5 +31,3 @@ jobs:
       with:
         name: slyd15-package
         path: packages/*.deb
-on:
-  workflow_dispatch:
