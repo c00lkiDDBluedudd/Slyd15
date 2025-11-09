@@ -1,259 +1,31 @@
-#import "Tweak.h"
+%hook SBLockScreenViewController
 
-/* Config */
-static bool enabled = true;
-static bool showChevron = true;
-static bool disableHome = true;
-static bool disableSwipe = true;
-static NSString *text = @"slide to unlock";
-
-/* Random stuff to keep track of */
-static SBPagedScrollView *psv = nil;
-static SBDashBoardMainPageView *sdbmpv = nil;
-static SBDashBoardTodayContentView *sdbtcv = nil;
-static SBDashBoardFixedFooterViewController *sdbffvc = nil;
-static SBDashBoardTeachableMomentsContainerViewController *sdbtmcvc = nil;
-static bool preventHome = false;
-static bool isOnLockscreen = true;
-static bool canUnlock = false;
-
-void setIsOnLockscreen(bool isIt) {
-    isOnLockscreen = isIt;
-    preventHome = false;
-    canUnlock = false;
-    [sdbmpv stuStateChanged];
-    [sdbtcv stuStateChanged];
-    [sdbffvc stuStateChanged];
-    [sdbtmcvc stuStateChanged];
-}
-
-%group SlideToUnlock
-
-%hook SBDashBoardMainPageView
-
-%property (nonatomic, retain) _UIGlintyStringView *stuGlintyStringView;
-
--(id)initWithFrame:(CGRect)arg1 {
-    id orig = %orig;
-    sdbmpv = self;
-    return orig;
-}
-
--(void)layoutSubviews {
-    %orig;
-    if (!self.stuGlintyStringView) {
-        self.stuGlintyStringView = [[_UIGlintyStringView alloc] initWithText:text andFont:[UIFont systemFontOfSize:25]];
-    }
-
-    [self stuStateChanged];
-}
-
-%new;
--(void)stuStateChanged {
-    if (isOnLockscreen && enabled) {
-        [self addSubview:self.stuGlintyStringView];
-        self.stuGlintyStringView.frame = CGRectMake(0, self.frame.size.height - 150, self.frame.size.width, 150);
-        [self sendSubviewToBack:self.stuGlintyStringView];
-        if (showChevron) {
-            [self.stuGlintyStringView setChevronStyle:1];
-        } else {
-            [self.stuGlintyStringView setChevronStyle:0];
-        }
-        [self.stuGlintyStringView hide];
-        [self.stuGlintyStringView show];
-    } else {
-        [self.stuGlintyStringView hide];
-        [self.stuGlintyStringView removeFromSuperview];
-    }
-}
-
-%end
-
-%hook SBUIPasscodeLockNumberPad
-
--(void)_cancelButtonHit {
-    %orig;
-    if (psv && enabled) {
-        preventHome = true;
-        [psv scrollToPageAtIndex:1 animated:true];
-    }
-}
-
-%end
-
-%hook SBPagedScrollView
-
--(id)initWithFrame:(CGRect)arg1 {
-    id orig = %orig;
-    psv = self;
-    return orig;
-}
-
--(void)_bs_didScrollWithContext:(id)arg1 {
-    %orig;
-    if (self.currentPageIndex == 0 && self.pageRelativeScrollOffset < 0.50
-            && !preventHome && isOnLockscreen && enabled) {
-        preventHome = true;
-        canUnlock = true;
-        [[%c(SBLockScreenManager) sharedInstance] lockScreenViewControllerRequestsUnlock];
-    }
-
-    if (self.currentPageIndex != 0) {
-        preventHome = false;
-    }
-}
-
--(void)setCurrentPageIndex:(NSUInteger)idx {
-    %orig;
-}
-
-%end
-
-%hook SBCoverSheetPrimarySlidingViewController
-
--(void)_handleDismissGesture:(id)arg1 {
-    if (enabled && isOnLockscreen && disableSwipe) {
-        return;
-    }
-
-    %orig;
-}
-
--(void)setPresented:(BOOL)arg1 animated:(BOOL)arg2 withCompletion:(/*^block*/id)arg3 {
-    if (enabled && isOnLockscreen && disableHome && !arg1 && !canUnlock) {
-        return;
-    }
-
-    %orig;
-}
-
-%end
-
-/* Bloat remover */
-
-%hook SBDashBoardTodayContentView
-
--(id)initWithFrame:(CGRect)arg1 {
-    id orig = %orig;
-    sdbtcv = self;
-    return orig;
-}
-
--(void)layoutSubviews {
-    %orig;
-    [self stuStateChanged];
-}
-
-%new;
--(void)stuStateChanged {
-    if (isOnLockscreen && enabled) {
-        self.alpha = 0.0;
-        self.hidden = YES;
-    } else {
-        self.alpha = 1.0;
-        self.hidden = NO;
-    }
-}
-
-%end
-
-%hook SBDashBoardFixedFooterViewController
-
--(id)init {
-    id orig = %orig;
-    sdbffvc = self;
-    return orig;
-}
-
--(void)viewDidLoad{
-    %orig;
-    [self stuStateChanged];
-}
-
-%new;
--(void)stuStateChanged {
-    if (enabled) {
-        self.view.alpha = 0.0;
-        self.view.hidden = YES;
-    } else {
-        self.view.alpha = 1.0;
-        self.view.hidden = NO;
-    }
-}
-
-%end
-
-%hook SBDashBoardTeachableMomentsContainerViewController
-
--(id)init {
-    id orig = %orig;
-    sdbtmcvc = self;
-    return orig;
-}
-
--(void)viewDidLoad{
-    %orig;
-    [self stuStateChanged];
-}
-
-%new;
--(void)stuStateChanged {
-    if (enabled) {
-        self.view.alpha = 0.0;
-        self.view.hidden = YES;
-    } else {
-        self.view.alpha = 1.0;
-        self.view.hidden = NO;
-    }
-}
-
-%end
-
-/* Check for unlock */
-
-%hook SBDashBoardViewController
-
--(void)viewWillAppear:(BOOL)animated {
+- (void)viewDidLoad {
     %orig;
 
-    setIsOnLockscreen(!self.authenticated);
+    UIView *lockView = self.view;
+
+    UILabel *slideLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, lockView.bounds.size.height - 100, lockView.bounds.size.width, 50)];
+    slideLabel.text = @"Slide to unlock";
+    slideLabel.textAlignment = NSTextAlignmentCenter;
+    slideLabel.textColor = [UIColor whiteColor];
+    slideLabel.font = [UIFont systemFontOfSize:24 weight:UIFontWeightLight];
+    slideLabel.alpha = 0.8;
+    [lockView addSubview:slideLabel];
+
+    CABasicAnimation *fade = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    fade.fromValue = @(0.2);
+    fade.toValue = @(1.0);
+    fade.duration = 1.5;
+    fade.autoreverses = YES;
+    fade.repeatCount = HUGE_VALF;
+    [slideLabel.layer addAnimation:fade forKey:@"fade"];
+
+    UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSlide:)];
+    [lockView addGestureRecognizer:pan];
 }
 
-%end
-
-%end
-
-static void displayStatusChanged(CFNotificationCenterRef center, void *observer, CFStringRef name, const void *object, CFDictionaryRef userInfo) {
-    setIsOnLockscreen(true);
-}
-
-static void reloadPreferences() {
-    HBPreferences *file = [[HBPreferences alloc] initWithIdentifier:@"me.nepeta.slyd"];
-    enabled = [([file objectForKey:@"Enabled"] ?: @(YES)) boolValue];
-    showChevron = [([file objectForKey:@"ShowChevron"] ?: @(YES)) boolValue];
-    disableHome = [([file objectForKey:@"DisableHome"] ?: @(YES)) boolValue];
-    disableSwipe = [([file objectForKey:@"DisableSwipe"] ?: @(YES)) boolValue];
-    text = [file objectForKey:@"Text"];
-    if (!text) text = @"slide to unlock";
-
-    if (sdbmpv) {
-        [sdbmpv.stuGlintyStringView setText:text];
-        [sdbmpv.stuGlintyStringView setNeedsTextUpdate:true];
-        [sdbmpv.stuGlintyStringView updateText];
-    }
-
-    setIsOnLockscreen(isOnLockscreen);
-}
-
-%ctor{
-    reloadPreferences();
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, (CFNotificationCallback)reloadPreferences, (CFStringRef)@"me.nepeta.slyd/ReloadPrefs", NULL, kNilOptions);
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL, displayStatusChanged, CFSTR("com.apple.iokit.hid.displayStatus"), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
-
-    %init(SlideToUnlock);
-}UIPanGestureRecognizer *pan = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(handleSlide:)];
-[self.view addGestureRecognizer:pan];
-
+%new
 - (void)handleSlide:(UIPanGestureRecognizer *)gesture {
     CGPoint translation = [gesture translationInView:self.view];
     if (translation.x > 200) {
@@ -261,3 +33,4 @@ static void reloadPreferences() {
     }
 }
 
+%end
